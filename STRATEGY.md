@@ -5,6 +5,26 @@ Implementation: [mm_backtest/glft.py](mm_backtest/glft.py). Run:
 quotes, ±5 ETH cap, 10 ms latency, Hyperliquid base-tier fees maker 1.5 / taker
 4.5 bps, hourly funding).
 
+## Key finding
+
+On this market — a 1-tick ETH perp with ~32 ETH resting at L1, over two −3 %
+trending days — **no symmetric passive market maker is profitable, and the loss
+is adverse selection, not a bug or a tuning failure.** Every fill is
+quality-identical: net PnL per ETH traded is pinned at **−0.65 … −0.71 across
+*every* parameter we sweep** (γ, adjustment factors, funding tilt, grid depth,
+size, §5). The only lever on total PnL is *how much* you trade, so the best a
+passive quoter can do is lose less by trading less.
+
+The direct evidence is the markout curve (§7): the mid moves against our fills
+monotonically, from **−0.30 bps the instant we fill** to **−1.5 bps by 60 s**.
+The most a fill can *capture* on a 1-tick spread is half a tick ≈ 0.2 bps — an
+order of magnitude less. GLFT's contribution is therefore not a positive edge
+but **damage control**: it loses **11× less than a naive touch-camping quoter**
+(−4,864 vs −53,384) purely by quoting deep, skewing on inventory, and knowing
+when *not* to quote — at *identical* per-fill economics. This is the honest
+baseline; §7 states exactly what it would take to flip the sign (an alpha input,
+a calmer regime, or a rebate larger than any live tier offers).
+
 ## 1. Quoting logic
 
 The strategy is the closed-form approximation of the **Guéant–Lehalle–
@@ -192,6 +212,25 @@ the known optimistic-fill artifact of a zero-impact model (SIMULATOR.md) — so
 it is a loose worst-case bound, not a realistic competitor.
 
 ## 7. Analysis — why the PnL is negative, and what it would take
+
+**The loss is adverse selection**, and it is directly measurable. After every
+fill we track the signed mid move relative to our fill price — the *markout*.
+A randomly-selected fill would markout to ≈ 0; ours drift against us,
+monotonically, and the effect is already there the moment we trade:
+
+| horizon after fill | mean (bps) | qty-weighted (bps) |
+|---|---|---|
+| 0 s | −0.153 | −0.300 |
+| 1 s | −1.212 | −1.135 |
+| 5 s | −1.469 | −1.394 |
+| 30 s | −1.701 | −1.574 |
+| 60 s | −1.663 | −1.515 |
+
+(Negative = the mid moved against us after we filled.) The fill is already
+−0.30 bps under water *at execution* and deepens to −1.5 bps by 30–60 s. On a
+1-tick spread the most a fill can capture is half a tick ≈ 0.2 bps — so the
+adverse move exceeds the entire theoretical spread capture *before* a cent of
+fees. This is the number no parameter touches.
 
 Fee-tier sensitivity (default config; fills are fee-independent and 100 % maker,
 so this is exact arithmetic on the $15.4 M maker notional):
