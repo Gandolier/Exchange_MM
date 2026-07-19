@@ -4,11 +4,9 @@ A GLFT (Guéant–Lehalle–Fernandez-Tapia) market-making strategy and an
 event-driven backtester for an ETH perpetual, run over three calendar days of
 L2 order-book, trade and funding data (2026-03-19 … 2026-03-21).
 
-The writeups live in three docs: **[STRATEGY.md](STRATEGY.md)** (the model,
+The writeups live in two docs: **[STRATEGY.md](STRATEGY.md)** (the model,
 calibration, results), **[SIMULATOR.md](SIMULATOR.md)** (the matching engine and
-its assumptions), and **[DATA.md](DATA.md)** (data profiling and the
-microstructure facts that drove the design). The task brief is in
-[Description.md](Description.md).
+its assumptions).
 
 ## Project structure
 
